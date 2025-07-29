@@ -1,0 +1,19 @@
+{
+  "ticket_id": "BEWHOOP000000001",
+  "question": "How do I reset my password?",
+  "answer": "Go to Forget Password option and reset password from there.",
+  "user_contact": {
+    "email": "user@example.com",
+    "whatsapp": "+123456789"
+  },
+  "category": "Account",
+  "audience": [
+    "Vendors"
+  ],
+  "tags": [
+    "reset",
+    "password"
+  ],
+  "status": "unanswered",
+  "created": "2025-07-28T09:18:50.461584"
+}
