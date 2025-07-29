@@ -4,7 +4,7 @@ import argparse
 from dotenv import load_dotenv
 from knowledge_base import load_knowledge_base
 from vector_store import build_vector_store, load_vector_store
-from query_handler import handle_user_question
+from query_handler import handle_user_question_sync
 
 # Add parent directory to Python path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -19,9 +19,9 @@ def run_cli():
     """Run the CLI version of the BeWhoop Bot."""
     setup_environment()
     kb_data = load_knowledge_base("../bewhoop_kb.json")
-    vectorstore = build_vector_store(kb_data)
+    # vectorstore = build_vector_store(kb_data)
     # Alternatively, load existing vector store
-    # vectorstore = load_vector_store()
+    vectorstore = load_vector_store()
 
     print("👋 Hey! I'm the BeWhoop Bot. I can help you with any relevant queries you have.")
     print("Just ask me something about our services, policies, or documentation!\n")
@@ -31,7 +31,8 @@ def run_cli():
         if user_input.strip().lower() in ["exit", "quit"]:
             print("👋 Goodbye!")
             break
-        response = handle_user_question(user_input, vectorstore)
+        response = handle_user_question_sync(user_input, vectorstore)
+
         print(f"🤖 BeWhoop Bot: {response}")
 
 def main():

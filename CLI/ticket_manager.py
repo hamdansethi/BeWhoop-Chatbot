@@ -1,32 +1,51 @@
 import json
 import re
-from datetime import datetime
+import os
+from datetime import datetime, timezone
 
-def load_unanswered_kb(file_path="../unanswered_kb.json"):  # Adjusted default path
-    """Load the unanswered questions knowledge base."""
-    try:
-        with open(file_path, "r") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return []
+UNANSWERED_DIR = "../unanswered"  # Folder to store individual unanswered files
+TICKET_PREFIX = "BEWHOOP"
+TICKET_DIGITS = 9
 
-def generate_ticket_id(existing_ids, prefix="BEWHOOP", digits=7):
-    """Generate a unique ticket ID."""
+def ensure_unanswered_dir():
+    """Ensure the unanswered folder exists."""
+    os.makedirs(UNANSWERED_DIR, exist_ok=True)
+
+def get_existing_ticket_ids():
+    """Scan existing files in the unanswered directory to get ticket IDs."""
+    ensure_unanswered_dir()
+    files = os.listdir(UNANSWERED_DIR)
+    ticket_ids = [
+        re.match(rf"^{TICKET_PREFIX}(\d{{{TICKET_DIGITS}}})\.json$", f)
+        for f in files
+    ]
+    return [
+        f"{TICKET_PREFIX}{m.group(1)}"
+        for m in ticket_ids if m is not None
+    ]
+
+def generate_ticket_id(existing_ids):
+    """Generate a new unique ticket ID like BEWHOOP000000001."""
     numbers = [
-        int(re.search(rf"{prefix}(\\d+)", t).group(1))
-        for t in existing_ids if re.match(rf"{prefix}\\d+", t)
+        int(re.search(rf"{TICKET_PREFIX}(\d+)", t).group(1))
+        for t in existing_ids
     ]
     next_number = max(numbers) + 1 if numbers else 1
-    return f"{prefix}{str(next_number).zfill(digits)}"
+    return f"{TICKET_PREFIX}{str(next_number).zfill(TICKET_DIGITS)}"
 
-def save_unanswered_ver_1(question, user_contact, category=None, audience=None, tags=None, file_path="../unanswered_kb.json"):  # Adjusted default path
-    """Save an unanswered question to the knowledge base."""
-    data = load_unanswered_kb(file_path)
-    existing_ids = [entry["ticket_id"] for entry in data]
+def save_unanswered_question_individual(
+    question,
+    user_contact,
+    category=None,
+    audience=None,
+    tags=None
+):
+    """Save each unanswered question in its own JSON file under the 'unanswered' folder."""
 
+    existing_ids = get_existing_ticket_ids()
     ticket_id = generate_ticket_id(existing_ids)
 
-    new_entry = {
+    entry = {
         "ticket_id": ticket_id,
         "question": question,
         "answer": "",
@@ -35,33 +54,23 @@ def save_unanswered_ver_1(question, user_contact, category=None, audience=None, 
         "audience": audience or [],
         "tags": tags or [],
         "status": "unanswered",
-        "created": datetime.now().strftime("%Y-%m-%d")
+        "created": datetime.now(timezone.utc).isoformat()
     }
 
-    data.append(new_entry)
-
+    # Save as a separate file
+    file_path = os.path.join(UNANSWERED_DIR, f"{ticket_id}.json")
     with open(file_path, "w") as f:
-        json.dump(data, f, indent=2)
+        json.dump(entry, f, indent=2)
 
     return ticket_id
 
-def save_unanswered_question_v2(question, user_contact, file_path="../unanswered_questions_v2.json"):  # Adjusted default path
-    """Save an unanswered question to an alternate database."""
-    entry = {
-        "question": question,
-        "email": user_contact.get("email"),
-        "whatsapp": user_contact.get("whatsapp"),
-        "timestamp": datetime.utcnow().isoformat()
-    }
-    try:
-        with open(file_path, "r") as f:
-            data = json.load(f)
-    except FileNotFoundError:
-        data = []
+# ticket = save_unanswered_question_individual(
+#     question="How do I reset my password?",
+#     user_contact={"email": "user@example.com", "whatsapp": "+123456789"},
+#     category="Account",
+#     audience=["Vendors"],
+#     tags=["reset", "password"]
+# )
 
-    data.append(entry)
+# print(ticket)
 
-    with open(file_path, "w") as f:
-        json.dump(data, f, indent=2)
-
-    return f"TICKET-{len(data):04d}"
